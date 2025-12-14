@@ -1,0 +1,216 @@
+{
+  "name": "Claude Agent SDK - Codebase Analyzer",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analyze-codebase",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-agent-001",
+      "name": "Webhook - Receive Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "agent-codebase-webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "task-001",
+              "name": "task",
+              "value": "={{ $json.body.task || 'Analyze this codebase' }}",
+              "type": "string"
+            },
+            {
+              "id": "repo-001",
+              "name": "repository_path",
+              "value": "={{ $json.body.repository_path || '/tmp/repo' }}",
+              "type": "string"
+            },
+            {
+              "id": "tools-001",
+              "name": "allowed_tools",
+              "value": "={{ $json.body.allowed_tools || ['Read', 'Bash', 'Glob', 'Grep'] }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-agent-params-001",
+      "name": "Extract Parameters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import asyncio\nimport json\nimport os\nfrom typing import List, Dict, Any\n\n# Note: claude-agent-sdk must be installed in your n8n environment\n# pip install claude-agent-sdk\ntry:\n    from claude_agent_sdk import query, ClaudeAgentOptions\nexcept ImportError:\n    return [{\"json\": {\"error\": \"claude-agent-sdk not installed. Run: pip install claude-agent-sdk\"}}]\n\n# Get input from n8n\ntask = $json.get('task', 'Analyze this codebase')\nrepository_path = $json.get('repository_path', '/tmp/repo')\nallowed_tools = $json.get('allowed_tools', ['Read', 'Bash', 'Glob', 'Grep'])\n\nasync def run_claude_agent(task_description: str, repo_path: str, tools: List[str]) -> Dict[str, Any]:\n    \"\"\"\n    Run Claude Agent SDK to analyze codebase\n    \"\"\"\n    # Build comprehensive prompt\n    prompt = f\"\"\"{task_description}\n\nRepository location: {repo_path}\n\nPlease provide a structured analysis including:\n1. Overview of the codebase structure\n2. Key findings\n3. Recommendations\n4. Any issues or concerns\n\nFormat your response as JSON with these keys:\n- summary: string\n- structure: array of strings\n- findings: array of objects with 'category' and 'description'\n- recommendations: array of strings\n- issues: array of objects with 'severity' and 'description'\n\"\"\"\n    \n    messages = []\n    final_response = None\n    \n    try:\n        # Run the agent\n        async for message in query(\n            prompt=prompt,\n            options=ClaudeAgentOptions(\n                allowed_tools=tools,\n                permission_mode=\"acceptEdits\",  # Auto-accept read operations\n                max_iterations=20,\n                working_directory=repo_path\n            )\n        ):\n            messages.append({\n                \"type\": message.get(\"type\"),\n                \"content\": str(message.get(\"content\", \"\"))[:500]  # Truncate for logging\n            })\n            \n            # Capture final response\n            if message.get(\"type\") == \"text\":\n                final_response = message.get(\"content\")\n        \n        return {\n            \"success\": True,\n            \"response\": final_response,\n            \"messages_count\": len(messages),\n            \"task\": task_description,\n            \"repository\": repo_path\n        }\n        \n    except Exception as e:\n        return {\n            \"success\": False,\n            \"error\": str(e),\n            \"task\": task_description\n        }\n\n# Run the agent\nresult = asyncio.run(run_claude_agent(task, repository_path, allowed_tools))\n\n# Return to n8n\nreturn [{\"json\": result}]"
+      },
+      "id": "run-agent-sdk-001",
+      "name": "Run Claude Agent SDK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "id": "success-check-001",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-success-001",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "format-response-001",
+              "name": "analysis",
+              "value": "={{ $json.response }}",
+              "type": "string"
+            },
+            {
+              "id": "format-meta-001",
+              "name": "metadata",
+              "value": "={{ { \"messages_count\": $json.messages_count, \"task\": $json.task, \"repository\": $json.repository, \"timestamp\": new Date().toISOString() } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-success-001",
+      "name": "Format Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1050, 250]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"analysis\": $json.analysis, \"metadata\": $json.metadata } }}",
+        "options": {}
+      },
+      "id": "respond-success-001",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 250]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": false, \"error\": $json.error, \"task\": $json.task } }}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "respond-error-001",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 350]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Receive Request": {
+      "main": [
+        [
+          {
+            "node": "Extract Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Parameters": {
+      "main": [
+        [
+          {
+            "node": "Run Claude Agent SDK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Claude Agent SDK": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Format Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "00000000-0000-0000-0000-000000000000",
+  "meta": {
+    "instanceId": "your-instance-id"
+  },
+  "id": "claude-agent-sdk-codebase",
+  "tags": []
+}

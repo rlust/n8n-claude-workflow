@@ -1,14 +1,16 @@
-# n8n + Claude API Workflows
+# n8n + Claude Workflows
 
-A collection of production-ready n8n workflows that integrate with Claude API (Anthropic) for intelligent automation tasks.
+A collection of production-ready n8n workflows that integrate with Claude (Anthropic) for intelligent automation tasks, including both **Claude API** (simple text processing) and **Claude Agent SDK** (autonomous agents).
 
 ## Overview
 
-This repository contains example workflows and comprehensive documentation to help you integrate Claude's AI capabilities into your n8n automation workflows. Whether you're building chatbots, automating code reviews, or processing documents, these examples will get you started quickly.
+This repository contains example workflows and comprehensive documentation to help you integrate Claude's AI capabilities into your n8n automation workflows. Whether you're building chatbots, automating code reviews, processing documents, or running autonomous agents that can execute code, these examples will get you started quickly.
 
 ## What's Included
 
 ### 🔧 Ready-to-Use Workflows
+
+#### Claude API Workflows (Simple HTTP calls)
 
 1. **Claude Text Processor** - Simple text processing with manual trigger
    - Text summarization
@@ -27,10 +29,24 @@ This repository contains example workflows and comprehensive documentation to he
    - Compression ratio tracking
    - Support for multiple formats (bullets/paragraphs)
 
+#### Claude Agent SDK Workflows (Autonomous agents)
+
+4. **Claude Agent SDK - Simple Task Runner** - JavaScript/TypeScript agent
+   - Autonomous tool usage (Read, Bash, Glob, Grep)
+   - Multi-step task execution
+   - Perfect for one-off automation tasks
+
+5. **Claude Agent SDK - Codebase Analyzer** - Advanced Python agent
+   - Webhook-triggered autonomous analysis
+   - Full codebase exploration and review
+   - Structured JSON output
+   - Ideal for CI/CD integration
+
 ### 📚 Documentation
 
 - **[QUICKSTART.md](n8n-workflows/QUICKSTART.md)** - Get started in 5 minutes
 - **[README.md](n8n-workflows/README.md)** - Comprehensive guide with examples
+- **[AGENT-SDK-GUIDE.md](n8n-workflows/AGENT-SDK-GUIDE.md)** - Complete guide to Claude Agent SDK integration
 - **Test Scripts** - Ready-to-use webhook testing tools
 
 ## Quick Start
@@ -105,6 +121,40 @@ curl -X POST http://localhost:5678/webhook/summarize \
     "max_length": "short"
   }'
 ```
+
+### Autonomous Agent (Agent SDK)
+
+After setting up the Agent SDK workflow (see [AGENT-SDK-GUIDE.md](n8n-workflows/AGENT-SDK-GUIDE.md)):
+
+```bash
+curl -X POST http://localhost:5678/webhook/analyze-codebase \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": "Find all TODO comments in the codebase and create a summary report",
+    "repository_path": "/path/to/repo",
+    "allowed_tools": ["Read", "Glob", "Grep"]
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "analysis": "I found 23 TODO comments across 12 files:\n\n**High Priority:**\n- src/auth.js:45 - TODO: Add rate limiting\n- src/api.js:128 - TODO: Implement error handling\n\n**Medium Priority:**\n...",
+  "metadata": {
+    "messages_count": 15,
+    "task": "Find all TODO comments...",
+    "timestamp": "2025-12-14T..."
+  }
+}
+```
+
+**What's different?** The agent autonomously:
+1. Used Glob to find all code files
+2. Used Grep to search for TODO comments
+3. Read relevant files for context
+4. Organized findings by priority
+5. Generated a structured report
 
 ## Available Claude Models
 

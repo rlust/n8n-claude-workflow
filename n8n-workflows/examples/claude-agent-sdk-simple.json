@@ -1,0 +1,134 @@
+{
+  "name": "Claude Agent SDK - Simple Task Runner",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger-001",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "task-simple-001",
+              "name": "task",
+              "value": "Find all TODO comments in Python files in /tmp/test-repo and list them with file names and line numbers",
+              "type": "string"
+            },
+            {
+              "id": "tools-simple-001",
+              "name": "tools",
+              "value": "={{ ['Read', 'Glob', 'Grep'] }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-task-001",
+      "name": "Set Task",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "// Claude Agent SDK - JavaScript/TypeScript Example\n// Install: npm install @anthropic-ai/claude-agent-sdk\n\nconst { query } = require('@anthropic-ai/claude-agent-sdk');\n\n// Get task from previous node\nconst task = $json.task;\nconst allowedTools = $json.tools || ['Read', 'Glob', 'Grep'];\n\nasync function runClaudeAgent() {\n  const messages = [];\n  let finalResult = null;\n  \n  try {\n    console.log('Starting Claude Agent...');\n    console.log('Task:', task);\n    \n    // Run the agent with streaming responses\n    for await (const message of query({\n      prompt: task,\n      options: {\n        allowedTools: allowedTools,\n        permissionMode: 'acceptEdits',\n        maxIterations: 20,\n        workingDirectory: process.cwd()\n      }\n    })) {\n      \n      // Log message type\n      console.log('Message type:', message.type);\n      \n      // Collect all messages\n      messages.push({\n        type: message.type,\n        content: message.content ? String(message.content).substring(0, 200) : null\n      });\n      \n      // Capture final text response\n      if (message.type === 'text') {\n        finalResult = message.content;\n      }\n      \n      // Capture tool usage\n      if (message.type === 'tool_use') {\n        console.log('Tool used:', message.tool_name);\n      }\n    }\n    \n    console.log('Agent completed successfully');\n    console.log('Total messages:', messages.length);\n    \n    return {\n      success: true,\n      result: finalResult,\n      messagesCount: messages.length,\n      task: task,\n      timestamp: new Date().toISOString()\n    };\n    \n  } catch (error) {\n    console.error('Agent error:', error.message);\n    \n    return {\n      success: false,\n      error: error.message,\n      task: task,\n      timestamp: new Date().toISOString()\n    };\n  }\n}\n\n// Execute and return result\nconst result = await runClaudeAgent();\nreturn { json: result };"
+      },
+      "id": "run-agent-simple-001",
+      "name": "Run Claude Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "display-result-001",
+              "name": "agent_response",
+              "value": "={{ $json.result }}",
+              "type": "string"
+            },
+            {
+              "id": "display-meta-001",
+              "name": "success",
+              "value": "={{ $json.success }}",
+              "type": "boolean"
+            },
+            {
+              "id": "display-count-001",
+              "name": "messages_count",
+              "value": "={{ $json.messagesCount }}",
+              "type": "number"
+            },
+            {
+              "id": "display-time-001",
+              "name": "completed_at",
+              "value": "={{ $json.timestamp }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "display-result-001",
+      "name": "Display Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [850, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Set Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Task": {
+      "main": [
+        [
+          {
+            "node": "Run Claude Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Claude Agent": {
+      "main": [
+        [
+          {
+            "node": "Display Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "00000000-0000-0000-0000-000000000000",
+  "meta": {
+    "instanceId": "your-instance-id"
+  },
+  "id": "claude-agent-sdk-simple",
+  "tags": []
+}

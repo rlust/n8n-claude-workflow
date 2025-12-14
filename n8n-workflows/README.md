@@ -1,6 +1,6 @@
-# n8n + Claude API Integration
+# n8n + Claude Integration
 
-This directory contains example n8n workflows that integrate with Claude API for various automation tasks.
+This directory contains example n8n workflows that integrate with Claude for intelligent automation tasks, including both **Claude API** (simple text processing) and **Claude Agent SDK** (autonomous agents that can execute code).
 
 ## Prerequisites
 
@@ -23,9 +23,15 @@ This directory contains example n8n workflows that integrate with Claude API for
 
 1. In n8n, click **Workflows** → **Import from File**
 2. Import the workflow JSON files from the `examples/` directory:
+
+   **Claude API Workflows** (Simple HTTP calls):
    - `claude-text-processor.json` - Simple text processing with Claude
    - `claude-code-analyzer.json` - Code analysis via webhook
    - `claude-document-summarizer.json` - Document summarization service
+
+   **Claude Agent SDK Workflows** (Autonomous agents):
+   - `claude-agent-sdk-simple.json` - Simple agent task runner (JavaScript)
+   - `claude-agent-sdk-codebase-analyzer.json` - Advanced codebase analysis (Python)
 
 ### 3. Configure Each Workflow
 
@@ -130,6 +136,69 @@ curl -X POST http://localhost:5678/webhook/summarize \
   }
 }
 ```
+
+### 4. Claude Agent SDK - Simple Task Runner
+
+**File**: `examples/claude-agent-sdk-simple.json`
+
+**Purpose**: Demonstrates autonomous agent execution using Claude Agent SDK (JavaScript/TypeScript)
+
+**What makes this different**: Unlike the simple API workflows above, this uses the **Claude Agent SDK** which allows Claude to autonomously use tools (read files, run commands, search code) to accomplish tasks.
+
+**How to use**:
+1. Install the SDK in your n8n environment: `npm install @anthropic-ai/claude-agent-sdk`
+2. Set environment variable: `ANTHROPIC_API_KEY=your_key`
+3. Import and run the workflow
+4. Modify the task in the "Set Task" node
+
+**Example tasks**:
+- "Find all TODO comments in Python files and list them"
+- "Analyze test coverage by comparing test files to source files"
+- "Generate a summary of all API endpoints in this codebase"
+
+### 5. Claude Agent SDK - Codebase Analyzer
+
+**File**: `examples/claude-agent-sdk-codebase-analyzer.json`
+
+**Purpose**: Advanced webhook-based codebase analysis using Claude Agent SDK (Python)
+
+**Capabilities**:
+- Autonomous file exploration and analysis
+- Multi-step reasoning and tool usage
+- Structured JSON output
+- Customizable tool permissions
+
+**How to use**:
+1. Install the SDK: `pip install claude-agent-sdk`
+2. Set `ANTHROPIC_API_KEY` environment variable
+3. Import and activate the workflow
+4. Send POST requests with analysis tasks
+
+**Example request**:
+```bash
+curl -X POST http://localhost:5678/webhook/analyze-codebase \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": "Review all JavaScript files for security issues",
+    "repository_path": "/path/to/repo",
+    "allowed_tools": ["Read", "Glob", "Grep"]
+  }'
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "analysis": "Detailed analysis from Claude agent...",
+  "metadata": {
+    "messages_count": 15,
+    "task": "Review all JavaScript files...",
+    "timestamp": "2025-12-14T..."
+  }
+}
+```
+
+**For complete setup guide, see**: [AGENT-SDK-GUIDE.md](AGENT-SDK-GUIDE.md)
 
 ## Advanced Usage
 
