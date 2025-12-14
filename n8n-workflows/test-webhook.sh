@@ -9,7 +9,7 @@ echo ""
 
 # Test 1: Simple JavaScript code
 echo "Test 1: Analyzing JavaScript code..."
-curl -X POST http://localhost:5678/webhook/analyze-code \
+curl -X POST http://100.82.85.95:5678/webhook/analyze-code \
   -H "Content-Type: application/json" \
   -d '{
     "code": "function calculateSum(a, b) { return a + b; }",
@@ -22,7 +22,7 @@ echo ""
 
 # Test 2: Python code with potential issues
 echo "Test 2: Analyzing Python code with issues..."
-curl -X POST http://localhost:5678/webhook/analyze-code \
+curl -X POST http://100.82.85.95:5678/webhook/analyze-code \
   -H "Content-Type: application/json" \
   -d '{
     "code": "def process_data(data):\n    result = []\n    for i in range(len(data)):\n        result.append(data[i] * 2)\n    return result",

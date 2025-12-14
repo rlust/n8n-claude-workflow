@@ -14,7 +14,7 @@ Get your n8n + Claude integration running in 5 minutes!
 
 ### Option A: Using HTTP Header Auth (Recommended)
 
-1. Open n8n at http://localhost:5678
+1. Open n8n at http://100.82.85.95:5678
 2. Click your profile icon → **Settings** → **Credentials**
 3. Click **+ Add Credential**
 4. Search for **"Header Auth"** or **"HTTP Header Auth"**
@@ -66,7 +66,7 @@ If your n8n version doesn't have Header Auth:
 5. Test it:
 
 ```bash
-curl -X POST http://localhost:5678/webhook/analyze-code \
+curl -X POST http://100.82.85.95:5678/webhook/analyze-code \
   -H "Content-Type: application/json" \
   -d '{
     "code": "function test() { var x = 1; }",

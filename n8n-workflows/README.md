@@ -11,7 +11,7 @@ This directory contains example n8n workflows that integrate with Claude for int
 
 ### 1. Configure Anthropic API Credentials in n8n
 
-1. Access your n8n instance at http://localhost:5678
+1. Access your n8n instance at http://100.82.85.95:5678
 2. Go to **Settings** → **Credentials** → **New**
 3. Search for **HTTP Header Auth** (or use the HTTP Request node with custom headers)
 4. Create a credential with:
@@ -75,7 +75,7 @@ After importing, update each workflow:
 
 **Example request**:
 ```bash
-curl -X POST http://localhost:5678/webhook/analyze-code \\
+curl -X POST http://100.82.85.95:5678/webhook/analyze-code \\
   -H "Content-Type: application/json" \\
   -d '{
     "code": "function hello() { console.log(\"Hello\"); }",
@@ -110,7 +110,7 @@ curl -X POST http://localhost:5678/webhook/analyze-code \\
 
 **Example request**:
 ```bash
-curl -X POST http://localhost:5678/webhook/summarize \
+curl -X POST http://100.82.85.95:5678/webhook/summarize \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Your long document text here...",
@@ -176,7 +176,7 @@ curl -X POST http://localhost:5678/webhook/summarize \
 
 **Example request**:
 ```bash
-curl -X POST http://localhost:5678/webhook/analyze-codebase \
+curl -X POST http://100.82.85.95:5678/webhook/analyze-codebase \
   -H "Content-Type: application/json" \
   -d '{
     "task": "Review all JavaScript files for security issues",
@@ -287,7 +287,7 @@ Additional workflow templates are available in the `templates/` directory:
 ### Webhook Testing
 ```bash
 # Test the code analyzer
-curl -X POST http://localhost:5678/webhook/analyze-code \\
+curl -X POST http://100.82.85.95:5678/webhook/analyze-code \\
   -H "Content-Type: application/json" \\
   -d '{
     "code": "const x = 1; var y = 2;",

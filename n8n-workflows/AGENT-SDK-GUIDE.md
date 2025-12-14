@@ -69,7 +69,7 @@ Import `examples/claude-agent-sdk-codebase-analyzer.json` into n8n:
 Send a POST request to trigger the agent:
 
 ```bash
-curl -X POST http://localhost:5678/webhook/analyze-codebase \
+curl -X POST http://100.82.85.95:5678/webhook/analyze-codebase \
   -H "Content-Type: application/json" \
   -d '{
     "task": "Analyze the Python files in this repository and list all functions",

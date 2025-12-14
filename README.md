@@ -83,7 +83,7 @@ This repository contains example workflows and comprehensive documentation to he
 After importing and activating the code analyzer workflow:
 
 ```bash
-curl -X POST http://localhost:5678/webhook/analyze-code \
+curl -X POST http://100.82.85.95:5678/webhook/analyze-code \
   -H "Content-Type: application/json" \
   -d '{
     "code": "function calculateTotal(items) {
@@ -113,7 +113,7 @@ Response:
 ### Document Summarization
 
 ```bash
-curl -X POST http://localhost:5678/webhook/summarize \
+curl -X POST http://100.82.85.95:5678/webhook/summarize \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Long document text here...",
@@ -127,7 +127,7 @@ curl -X POST http://localhost:5678/webhook/summarize \
 After setting up the Agent SDK workflow (see [AGENT-SDK-GUIDE.md](n8n-workflows/AGENT-SDK-GUIDE.md)):
 
 ```bash
-curl -X POST http://localhost:5678/webhook/analyze-codebase \
+curl -X POST http://100.82.85.95:5678/webhook/analyze-codebase \
   -H "Content-Type: application/json" \
   -d '{
     "task": "Find all TODO comments in the codebase and create a summary report",
