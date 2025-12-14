@@ -1,0 +1,288 @@
+{
+  "name": "Claude Document Summarizer",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "summarize",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-summarize-001",
+      "name": "Webhook - Receive Document",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "summarize-webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text-001",
+              "name": "text",
+              "value": "={{ $json.body.text || $json.body.content }}",
+              "type": "string"
+            },
+            {
+              "id": "format-001",
+              "name": "format",
+              "value": "={{ $json.body.format || 'paragraph' }}",
+              "type": "string"
+            },
+            {
+              "id": "length-001",
+              "name": "max_length",
+              "value": "={{ $json.body.max_length || 'medium' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-doc-001",
+      "name": "Extract Document Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "id": "length-check-001",
+              "leftValue": "={{ $json.text.length }}",
+              "rightValue": 100,
+              "operator": {
+                "type": "number",
+                "operation": "largerEqual"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-length-001",
+      "name": "Check Text Length",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "prompt-build-001",
+              "name": "prompt",
+              "value": "={{ 'Please provide a ' + $json.max_length + ' summary of the following text.\\n\\n' + ($json.format === 'bullets' ? 'Format as bullet points.\\n\\n' : 'Format as a concise paragraph.\\n\\n') + 'Text to summarize:\\n' + $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "build-summary-prompt-001",
+      "name": "Build Summary Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [850, 250]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "claude-sonnet-4-5-20250929"
+            },
+            {
+              "name": "max_tokens",
+              "value": "2048"
+            },
+            {
+              "name": "messages",
+              "value": "={{ [{\"role\": \"user\", \"content\": $json.prompt}] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-claude-summarize-001",
+      "name": "Call Claude API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 250]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary-result-001",
+              "name": "summary",
+              "value": "={{ $json.content[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "original-length-001",
+              "name": "original_length",
+              "value": "={{ $('Extract Document Data').item.json.text.length }}",
+              "type": "number"
+            },
+            {
+              "id": "summary-length-001",
+              "name": "summary_length",
+              "value": "={{ $json.content[0].text.length }}",
+              "type": "number"
+            },
+            {
+              "id": "compression-001",
+              "name": "compression_ratio",
+              "value": "={{ Math.round((1 - $json.content[0].text.length / $('Extract Document Data').item.json.text.length) * 100) + '%' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-summary-response-001",
+      "name": "Format Summary Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1250, 250]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"summary\": $json.summary, \"metadata\": { \"original_length\": $json.original_length, \"summary_length\": $json.summary_length, \"compression_ratio\": $json.compression_ratio } } }}",
+        "options": {}
+      },
+      "id": "respond-summary-001",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1450, 250]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": false, \"error\": \"Text too short to summarize. Minimum 100 characters required.\", \"length\": $json.text.length } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "respond-error-001",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 350]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Receive Document": {
+      "main": [
+        [
+          {
+            "node": "Extract Document Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Document Data": {
+      "main": [
+        [
+          {
+            "node": "Check Text Length",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Text Length": {
+      "main": [
+        [
+          {
+            "node": "Build Summary Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Summary Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Claude API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude API": {
+      "main": [
+        [
+          {
+            "node": "Format Summary Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Summary Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "00000000-0000-0000-0000-000000000000",
+  "meta": {
+    "instanceId": "your-instance-id"
+  },
+  "id": "claude-document-summarizer",
+  "tags": []
+}
