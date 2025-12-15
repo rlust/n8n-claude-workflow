@@ -25,7 +25,7 @@
             {
               "id": "symbols-001",
               "name": "symbols",
-              "value": "={{ $json.body.symbols || 'SPY,QQQ,DIA' }}",
+              "value": "={{ $json.body.symbols || '^GSPC,^DJI' }}",
               "type": "string"
             },
             {

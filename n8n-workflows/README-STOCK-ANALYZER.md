@@ -43,7 +43,28 @@ This workflow uses Claude AI to provide intelligent stock market analysis with r
 
 ## Usage
 
-### Quick Market Overview
+### Major Stock Market Indexes (Default)
+
+```bash
+# S&P 500 and Dow Jones (default if no symbols provided)
+curl -X POST http://your-n8n-url:5678/webhook/stock-analysis \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### Analyze Multiple Indexes
+
+```bash
+# Compare S&P 500, NASDAQ, and VIX
+curl -X POST http://your-n8n-url:5678/webhook/stock-analysis \
+  -H "Content-Type: application/json" \
+  -d '{
+    "symbols": "^GSPC,^IXIC",
+    "analysis_type": "overview"
+  }'
+```
+
+### Individual Stocks Analysis
 
 ```bash
 curl -X POST http://your-n8n-url:5678/webhook/stock-analysis \
@@ -54,23 +75,28 @@ curl -X POST http://your-n8n-url:5678/webhook/stock-analysis \
   }'
 ```
 
-### Detailed Analysis
+### Detailed Market Analysis
 
 ```bash
+# Detailed analysis with trading recommendations
 curl -X POST http://your-n8n-url:5678/webhook/stock-analysis \
   -H "Content-Type: application/json" \
   -d '{
-    "symbols": "TSLA,NVDA",
+    "symbols": "^GSPC,SPY",
     "analysis_type": "detailed"
   }'
 ```
 
-### Default Analysis (SPY, QQQ, DIA)
+### Mix Indexes and Stocks
 
 ```bash
+# Compare S&P 500 index with tech stocks
 curl -X POST http://your-n8n-url:5678/webhook/stock-analysis \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+    "symbols": "^GSPC,AAPL",
+    "analysis_type": "detailed"
+  }'
 ```
 
 ## Response Format
@@ -140,9 +166,24 @@ For each stock, Claude receives:
 
 ## Supported Symbols
 
-Any valid stock ticker symbol from major exchanges:
-- **US Markets**: AAPL, MSFT, GOOGL, TSLA, NVDA, etc.
-- **ETFs**: SPY, QQQ, DIA, IWM, VTI, etc.
+### Major Stock Market Indexes
+- **^GSPC** - S&P 500 Index
+- **^DJI** - Dow Jones Industrial Average
+- **^IXIC** - NASDAQ Composite
+- **^RUT** - Russell 2000
+- **^VIX** - Volatility Index (Fear Index)
+- **^FTSE** - FTSE 100 (UK)
+- **^N225** - Nikkei 225 (Japan)
+
+### Popular ETFs (Index Trackers)
+- **SPY** - SPDR S&P 500 ETF
+- **QQQ** - Invesco QQQ (Nasdaq-100)
+- **DIA** - SPDR Dow Jones Industrial Average
+- **IWM** - iShares Russell 2000
+- **VTI** - Vanguard Total Stock Market
+
+### Individual Stocks
+- **US Markets**: AAPL, MSFT, GOOGL, TSLA, NVDA, AMZN, META, etc.
 - **International**: Many global stocks (format may vary)
 
 ## Cost Estimate
