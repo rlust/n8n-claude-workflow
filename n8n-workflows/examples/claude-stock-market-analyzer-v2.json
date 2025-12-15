@@ -1,0 +1,389 @@
+{
+  "name": "Claude Stock Market Analyzer v2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stock-analysis",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-stock",
+      "name": "Webhook - Stock Analysis",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "stock-analysis-webhook-v2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbols-001",
+              "name": "symbols",
+              "value": "={{ $json.body.symbols || 'SPY,QQQ,DIA' }}",
+              "type": "string"
+            },
+            {
+              "id": "analysis-type-001",
+              "name": "analysis_type",
+              "value": "={{ $json.body.analysis_type || 'overview' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-params-stock",
+      "name": "Extract Parameters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ $json.symbols.split(',')[0].trim() }}?interval=1d&range=5d",
+        "options": {}
+      },
+      "id": "fetch-stock-1",
+      "name": "Fetch Stock Data 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ $json.symbols.split(',')[1]?.trim() || 'QQQ' }}?interval=1d&range=5d",
+        "options": {}
+      },
+      "id": "fetch-stock-2",
+      "name": "Fetch Stock Data 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "merge-stock-data",
+      "name": "Merge Stock Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Clean and format stock data for Claude analysis\nconst items = $input.all();\nconst symbols = $('Extract Parameters').item.json.symbols.split(',');\nconst cleanedData = [];\n\nitems.forEach((item, index) => {\n  const symbol = symbols[index]?.trim() || 'UNKNOWN';\n  const rawData = item.json;\n  \n  // Extract quote data from Yahoo Finance response\n  const chart = rawData?.chart?.result?.[0];\n  \n  if (!chart) {\n    cleanedData.push({\n      symbol: symbol,\n      error: \"No data available\"\n    });\n    return;\n  }\n  \n  const quote = chart.indicators?.quote?.[0];\n  const timestamps = chart.timestamp || [];\n  const meta = chart.meta;\n  \n  // Filter out null values and build clean price array\n  const prices = [];\n  \n  for (let i = 0; i < timestamps.length; i++) {\n    if (quote?.close?.[i] !== null && quote?.close?.[i] !== undefined) {\n      prices.push({\n        date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],\n        open: parseFloat(quote.open?.[i]?.toFixed(2) || 0),\n        high: parseFloat(quote.high?.[i]?.toFixed(2) || 0),\n        low: parseFloat(quote.low?.[i]?.toFixed(2) || 0),\n        close: parseFloat(quote.close?.[i]?.toFixed(2) || 0),\n        volume: quote.volume?.[i] || 0\n      });\n    }\n  }\n  \n  const currentPrice = meta?.regularMarketPrice || prices[prices.length - 1]?.close || 0;\n  const previousClose = meta?.chartPreviousClose || prices[prices.length - 2]?.close || 0;\n  const priceChange = currentPrice - previousClose;\n  const priceChangePct = previousClose !== 0 ? ((priceChange / previousClose) * 100).toFixed(2) : '0.00';\n  \n  cleanedData.push({\n    symbol: symbol,\n    company_name: meta?.longName || symbol,\n    currency: meta?.currency || 'USD',\n    exchange: meta?.exchangeName || 'Unknown',\n    current_price: parseFloat(currentPrice.toFixed(2)),\n    previous_close: parseFloat(previousClose.toFixed(2)),\n    price_change: parseFloat(priceChange.toFixed(2)),\n    price_change_percent: priceChangePct + '%',\n    day_high: parseFloat((meta?.regularMarketDayHigh || 0).toFixed(2)),\n    day_low: parseFloat((meta?.regularMarketDayLow || 0).toFixed(2)),\n    prices: prices,\n    data_points: prices.length,\n    period: `Last ${prices.length} trading days`\n  });\n});\n\nreturn cleanedData.map(data => ({ json: { stock_data: data } }));"
+      },
+      "id": "clean-stock-data",
+      "name": "Clean Stock Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "market-data-001",
+              "name": "market_data",
+              "value": "={{ JSON.stringify($input.all().map(item => item.json.stock_data), null, 2) }}",
+              "type": "string"
+            },
+            {
+              "id": "symbols-ref",
+              "name": "symbols",
+              "value": "={{ $('Extract Parameters').item.json.symbols }}",
+              "type": "string"
+            },
+            {
+              "id": "analysis-ref",
+              "name": "analysis_type",
+              "value": "={{ $('Extract Parameters').item.json.analysis_type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-market-data",
+      "name": "Format Market Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "claude-prompt",
+              "name": "prompt",
+              "value": "={{ 'You are a professional financial market analyst. Analyze the following stock market data and provide a comprehensive analysis.\\n\\n' + ($json.analysis_type === 'detailed' ? '## Detailed Analysis Required:\\n\\n1. **Price Trend Analysis** - Identify uptrends, downtrends, or consolidation patterns\\n2. **Volume Analysis** - Assess trading volume patterns and liquidity\\n3. **Support and Resistance Levels** - Identify key price levels\\n4. **Market Sentiment** - Gauge overall market sentiment for each stock\\n5. **Trading Recommendations** - Provide actionable insights (bullish/bearish/neutral)\\n6. **Risk Assessment** - Identify potential risks and opportunities\\n7. **Comparative Analysis** - Compare the stocks if multiple symbols provided' : '## Overview Analysis:\\n\\n1. **Market Trend Summary** - Brief trend direction for each stock\\n2. **Key Price Levels** - Current price vs recent highs/lows\\n3. **Notable Movements** - Significant price changes\\n4. **Volume Insights** - Any unusual volume activity\\n5. **Quick Outlook** - Brief bullish/bearish/neutral assessment') + '\\n\\n## Stock Data:\\n\\n```json\\n' + $json.market_data + '\\n```\\n\\n---\\n\\n**Instructions:**\\n- Use clear markdown formatting with headers and bullet points\\n- Be specific with price levels and percentages\\n- Base analysis ONLY on the provided data\\n- Include disclaimers about financial advice\\n- Provide actionable insights where appropriate\\n\\nProvide your professional analysis now:' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "build-claude-prompt",
+      "name": "Build Claude Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 3000,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": $json.prompt\n    }\n  ]\n} }}",
+        "options": {}
+      },
+      "id": "call-claude-stock",
+      "name": "Call Claude API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        300
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "REYgTvbzUh2zQgDS",
+          "name": "x-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "analysis-result",
+              "name": "analysis",
+              "value": "={{ $json.content[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "symbols-final",
+              "name": "symbols",
+              "value": "={{ $('Format Market Data').item.json.symbols }}",
+              "type": "string"
+            },
+            {
+              "id": "model-used",
+              "name": "model",
+              "value": "={{ $json.model }}",
+              "type": "string"
+            },
+            {
+              "id": "tokens-used",
+              "name": "tokens_used",
+              "value": "={{ $json.usage.input_tokens + $json.usage.output_tokens }}",
+              "type": "number"
+            },
+            {
+              "id": "timestamp-analysis",
+              "name": "analyzed_at",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-final-response",
+      "name": "Format Final Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"symbols\": $json.symbols,\n  \"analysis\": $json.analysis,\n  \"metadata\": {\n    \"model\": $json.model,\n    \"tokens_used\": $json.tokens_used,\n    \"analyzed_at\": $json.analyzed_at\n  }\n} }}",
+        "options": {}
+      },
+      "id": "respond-stock",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Stock Analysis": {
+      "main": [
+        [
+          {
+            "node": "Extract Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Parameters": {
+      "main": [
+        [
+          {
+            "node": "Fetch Stock Data 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Stock Data 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Stock Data 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Stock Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Stock Data 2": {
+      "main": [
+        [
+          {
+            "node": "Merge Stock Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Stock Data": {
+      "main": [
+        [
+          {
+            "node": "Clean Stock Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Stock Data": {
+      "main": [
+        [
+          {
+            "node": "Format Market Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Market Data": {
+      "main": [
+        [
+          {
+            "node": "Build Claude Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Claude Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Claude API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude API": {
+      "main": [
+        [
+          {
+            "node": "Format Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Final Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-12-15T00:00:00.000Z",
+  "versionId": "2"
+}
