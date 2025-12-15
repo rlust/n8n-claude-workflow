@@ -188,6 +188,7 @@
     }
   },
   "pinData": {},
+  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
@@ -195,5 +196,6 @@
   "tags": [],
   "triggerCount": 0,
   "updatedAt": "2025-12-15T00:00:00.000Z",
-  "versionId": "telegram-webhook-v1"
+  "versionId": "telegram-webhook-v1",
+  "id": "telegram-notification-webhook"
 }
