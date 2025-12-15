@@ -1,0 +1,24 @@
+# Testing dependencies for n8n workflow automated tests
+
+# Core testing framework
+pytest>=7.4.0
+pytest-timeout>=2.1.0
+pytest-cov>=4.1.0
+pytest-xdist>=3.3.1  # For parallel test execution
+
+# HTTP client for API testing
+requests>=2.31.0
+
+# Test reporting and output
+pytest-html>=3.2.0  # HTML test reports
+pytest-json-report>=1.5.0  # JSON test reports for CI/CD
+
+# Performance testing
+pytest-benchmark>=4.0.0  # For benchmarking tests
+
+# Code quality
+flake8>=6.0.0  # Linting
+black>=23.0.0  # Code formatting
+
+# Optional: for more advanced testing
+pytest-asyncio>=0.21.0  # If you need async tests in future
