@@ -2,12 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 📌 Recent Work (2025-12-15)
+## 📌 Recent Work
 
-**IMPORTANT:** To recall the previous session, read these files:
-1. **n8n-workflows/SESSION-HISTORY.md** - Complete session timeline and details
-2. **n8n-workflows/IMPLEMENTATION-SUMMARY.md** - Project summary
-3. **n8n-workflows/TESTING-STATUS.md** - Current testing status
+### Session: 2025-12-17 - Scheduled Stock Analysis Workflow
+**IMPORTANT:** Read **SESSION-SUMMARY-2025-12-17.md** for complete session details
+
+**What was done:**
+- ✅ Fixed and enhanced smart_calc.py (interactive calculator with Claude Agent SDK)
+- ✅ Created working stock-to-telegram workflow (v3)
+- ✅ Added scheduled automation (Cron trigger at 9:30 AM weekdays)
+- ✅ Integrated Telegram bot for notifications
+- ✅ Dual trigger support (webhook + cron)
+- ✅ All credentials stored in .env file
+- ✅ Changes pushed to GitHub (commit: 2a4f7f0)
+
+**Active Workflows:**
+- Stock to Telegram v3 (Scheduled) - ID: B96iHmEjsX6Yo3IM
+- Analyzes AAPL, MSFT at 9:30 AM Mon-Fri
+- Also available via webhook for on-demand requests
+
+### Session: 2025-12-15 - Testing Infrastructure
+**Read:** n8n-workflows/SESSION-HISTORY.md
 
 **What was done:**
 - ✅ Implemented comprehensive automated testing suite with pytest
@@ -17,11 +32,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ Created 17 files (3,000+ lines)
 - ✅ All changes pushed to GitHub (commit: dcfcd82)
 
-**Current Status:**
-- Test infrastructure: ✅ Complete (100%)
-- Documentation: ✅ Complete (30KB+)
-- CI/CD: ✅ Configured
-- Next step: Activate n8n workflows with API credentials
+## 🔐 Credentials and Configuration
+
+**IMPORTANT:** All API keys and credentials are stored in `.env` file (not in Git)
+
+### Available Credentials in .env:
+- `N8N_URL` - n8n instance URL
+- `N8N_API_KEY` - n8n API authentication key
+- `ANTHROPIC_API_KEY` - Claude API key
+- `ANTHROPIC_MODEL` - Claude model ID
+- `TELEGRAM_BOT_TOKEN` - Telegram bot token
+- `TELEGRAM_CHAT_ID` - Telegram chat ID
+- `WORKFLOW_ID_STOCK_TO_TELEGRAM_V3` - Main workflow ID
+- `WEBHOOK_URL_STOCK_TELEGRAM_V3` - Webhook endpoint
+
+### Usage in Scripts:
+```bash
+# Load environment variables
+source .env
+
+# Or use in Python
+from dotenv import load_dotenv
+load_dotenv()
+
+# Or export for shell scripts
+export N8N_API_KEY=$(grep N8N_API_KEY .env | cut -d '=' -f2)
+```
+
+### For Future Sessions:
+When resuming work, Claude Code should read the `.env` file to access all necessary credentials and configuration.
 
 ## Development Commands
 
