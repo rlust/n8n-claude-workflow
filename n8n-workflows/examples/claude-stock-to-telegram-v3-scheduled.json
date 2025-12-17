@@ -334,13 +334,13 @@
             {
               "id": "chat_id",
               "name": "chat_id",
-              "value": "={{ $('Extract Params').item.json.chat_id }}",
+              "value": "={{ $('Merge Triggers').item.json.chat_id }}",
               "type": "string"
             },
             {
               "id": "send_telegram",
               "name": "send_telegram",
-              "value": "={{ $('Extract Params').item.json.send_telegram }}",
+              "value": "={{ $('Merge Triggers').item.json.send_telegram }}",
               "type": "boolean"
             },
             {
@@ -477,7 +477,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ {\n  \"success\": $json.success,\n  \"symbols\": $('Extract Params').item.json.symbol1 + ',' + $('Extract Params').item.json.symbol2,\n  \"analysis\": $('Extract Analysis').item.json.analysis,\n  \"tokens_used\": $('Extract Analysis').item.json.tokens,\n  \"telegram_sent\": $json.telegram_sent,\n  \"telegram_message_id\": $json.telegram_message_id || null\n} }}"
+        "responseBody": "={{ {\n  \"success\": $json.success,\n  \"symbols\": $('Merge Triggers').item.json.symbol1 + ',' + $('Merge Triggers').item.json.symbol2,\n  \"analysis\": $('Extract Analysis').item.json.analysis,\n  \"tokens_used\": $('Extract Analysis').item.json.tokens,\n  \"telegram_sent\": $json.telegram_sent,\n  \"telegram_message_id\": $json.telegram_message_id || null\n} }}"
       },
       "id": "respond-1",
       "name": "Respond",
