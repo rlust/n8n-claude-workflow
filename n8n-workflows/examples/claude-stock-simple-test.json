@@ -1,0 +1,166 @@
+{
+  "name": "Stock Analysis Test (Simple)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stock-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "stock-test"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "symbol",
+              "value": "={{ $json.body.symbol || 'AAPL' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-1",
+      "name": "Set Symbol",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ $json.symbol }}?interval=1d&range=1d"
+      },
+      "id": "http-1",
+      "name": "Fetch Yahoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "price",
+              "name": "price",
+              "value": "={{ $json.chart.result[0].meta.regularMarketPrice }}",
+              "type": "number"
+            },
+            {
+              "id": "symbol",
+              "name": "symbol",
+              "value": "={{ $('Set Symbol').item.json.symbol }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-2",
+      "name": "Extract Price",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "prompt",
+              "name": "prompt",
+              "value": "=The stock {{ $json.symbol }} is currently at ${{ $json.price }}. Provide a very brief 1-sentence analysis.",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-3",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\"model\": \"claude-sonnet-4-5-20250929\", \"max_tokens\": 256, \"messages\": [{\"role\": \"user\", \"content\": $json.prompt}]} }}"
+      },
+      "id": "http-2",
+      "name": "Call Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300],
+      "credentials": {
+        "anthropicApi": {
+          "id": "REYgTvbzUh2zQgDS",
+          "name": "x-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "analysis",
+              "name": "analysis",
+              "value": "={{ $json.content[0].text }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-4",
+      "name": "Extract",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\"success\": true, \"symbol\": $('Extract Price').item.json.symbol, \"price\": $('Extract Price').item.json.price, \"analysis\": $json.analysis} }}"
+      },
+      "id": "respond-1",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {"main": [[{"node": "Set Symbol", "type": "main", "index": 0}]]},
+    "Set Symbol": {"main": [[{"node": "Fetch Yahoo", "type": "main", "index": 0}]]},
+    "Fetch Yahoo": {"main": [[{"node": "Extract Price", "type": "main", "index": 0}]]},
+    "Extract Price": {"main": [[{"node": "Build Prompt", "type": "main", "index": 0}]]},
+    "Build Prompt": {"main": [[{"node": "Call Claude", "type": "main", "index": 0}]]},
+    "Call Claude": {"main": [[{"node": "Extract", "type": "main", "index": 0}]]},
+    "Extract": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "tags": []
+}
