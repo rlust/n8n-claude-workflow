@@ -1,0 +1,703 @@
+{
+  "name": "Stock to Telegram v3 (Fixed)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stock-telegram-v3",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        400
+      ],
+      "webhookId": "stock-telegram-v3-fixed"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 9 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "cron-morning",
+      "name": "Morning Summary Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol1-default",
+              "name": "symbol1",
+              "value": "AAPL",
+              "type": "string"
+            },
+            {
+              "id": "symbol2-default",
+              "name": "symbol2",
+              "value": "F",
+              "type": "string"
+            },
+            {
+              "id": "symbol3-default",
+              "name": "symbol3",
+              "value": "QQQ",
+              "type": "string"
+            },
+            {
+              "id": "symbol4-default",
+              "name": "symbol4",
+              "value": "PNB",
+              "type": "string"
+            },
+            {
+              "id": "symbol5-default",
+              "name": "symbol5",
+              "value": "MSFT",
+              "type": "string"
+            },
+            {
+              "id": "chat-id-default",
+              "name": "chat_id",
+              "value": "1955999067",
+              "type": "string"
+            },
+            {
+              "id": "send-telegram-default",
+              "name": "send_telegram",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-cron-defaults",
+      "name": "Set Cron Defaults",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        464,
+        208
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "merge-triggers",
+      "name": "Merge Triggers",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        688,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol1",
+              "name": "symbol1",
+              "value": "={{ $json.body.symbols ? $json.body.symbols.split(',')[0].trim() : 'AAPL' }}",
+              "type": "string"
+            },
+            {
+              "id": "symbol2",
+              "name": "symbol2",
+              "value": "={{ $json.body.symbols ? $json.body.symbols.split(',')[1]?.trim() || 'F' : 'F' }}",
+              "type": "string"
+            },
+            {
+              "id": "symbol3",
+              "name": "symbol3",
+              "value": "={{ $json.body.symbols ? $json.body.symbols.split(',')[2]?.trim() || 'QQQ' : 'QQQ' }}",
+              "type": "string"
+            },
+            {
+              "id": "symbol4",
+              "name": "symbol4",
+              "value": "={{ $json.body.symbols ? $json.body.symbols.split(',')[3]?.trim() || 'PNB' : 'PNB' }}",
+              "type": "string"
+            },
+            {
+              "id": "symbol5",
+              "name": "symbol5",
+              "value": "={{ $json.body.symbols ? $json.body.symbols.split(',')[4]?.trim() || 'MSFT' : 'MSFT' }}",
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "name": "chat_id",
+              "value": "={{ $json.body.chat_id || '1955999067' }}",
+              "type": "string"
+            },
+            {
+              "id": "send_telegram",
+              "name": "send_telegram",
+              "value": "={{ $json.body.send_to_telegram !== false }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-params",
+      "name": "Extract Params",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        464,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all stock data from the loop\nconst stockData = $('Parse Stock Data').all();\n\n// Build the prompt with all stocks\nconst stockList = stockData.map(item => {\n  const data = item.json;\n  return `${data.symbol}: $${data.price} (${data.change >= 0 ? '+' : ''}${data.change_pct}%)`;\n}).join('\\n');\n\nconst prompt = `Analyze these stocks:\\n\\n${stockList}\\n\\nProvide a brief analysis in Telegram Markdown format:\\n1. Overall market sentiment\\n2. Key observations for each stock\\n3. Brief outlook\\n\\nUse *bold*, _italic_, and emojis. Start with \"📊 *Stock Market Analysis*\"`;\n\nreturn [{ json: { prompt } }];"
+      },
+      "id": "set-prompt",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\"model\": \"claude-sonnet-4-5-20250929\", \"max_tokens\": 1024, \"messages\": [{\"role\": \"user\", \"content\": $json.prompt}]} }}",
+        "options": {}
+      },
+      "id": "http-claude",
+      "name": "Call Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1792,
+        304
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "REYgTvbzUh2zQgDS",
+          "name": "x-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "analysis",
+              "name": "analysis",
+              "value": "={{ $json.content[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "name": "chat_id",
+              "value": "={{ $('Merge Triggers').item.json.chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "send_telegram",
+              "name": "send_telegram",
+              "value": "={{ $('Merge Triggers').item.json.send_telegram }}",
+              "type": "boolean"
+            },
+            {
+              "id": "tokens",
+              "name": "tokens",
+              "value": "={{ $json.usage.input_tokens + $json.usage.output_tokens }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-extract",
+      "name": "Extract Analysis",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        2000,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.send_telegram }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-1",
+      "name": "Send Telegram?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2224,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.analysis }}",
+        "additionalFields": {
+          "disable_web_page_preview": true,
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-1",
+      "name": "Send to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        2448,
+        208
+      ],
+      "webhookId": "20df21f8-6219-470a-a3d5-120f2255ec33",
+      "credentials": {
+        "telegramApi": {
+          "id": "RU8X7kcB4vm0KAFx",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "telegram_sent",
+              "name": "telegram_sent",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "telegram_id",
+              "name": "telegram_message_id",
+              "value": "={{ $json.message_id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-telegram-response",
+      "name": "Telegram Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        2672,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "telegram_sent",
+              "name": "telegram_sent",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-no-telegram",
+      "name": "No Telegram Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        2448,
+        400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "merge-2",
+      "name": "Merge Responses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2880,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": $json.success,\n  \"symbols\": $('Merge Triggers').item.json.symbol1 + ',' + $('Merge Triggers').item.json.symbol2 + ',' + $('Merge Triggers').item.json.symbol3 + ',' + $('Merge Triggers').item.json.symbol4 + ',' + $('Merge Triggers').item.json.symbol5,\n  \"analysis\": $('Extract Analysis').item.json.analysis,\n  \"tokens_used\": $('Extract Analysis').item.json.tokens,\n  \"telegram_sent\": $json.telegram_sent,\n  \"telegram_message_id\": $json.telegram_message_id || null\n} }}",
+        "options": {}
+      },
+      "id": "respond-1",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3104,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const symbols = [\n  $input.item.json.symbol1,\n  $input.item.json.symbol2,\n  $input.item.json.symbol3,\n  $input.item.json.symbol4,\n  $input.item.json.symbol5\n];\n\nreturn symbols.map(symbol => ({ json: { symbol } }));"
+      },
+      "id": "create-array",
+      "name": "Create Symbols Array",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "split-batch",
+      "name": "Loop Over Symbols",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1392,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ $json.symbol }}?interval=1d&range=5d",
+        "options": {}
+      },
+      "id": "fetch-stock",
+      "name": "Fetch Stock Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "symbol",
+              "value": "={{ $json.chart.result[0].meta.symbol }}",
+              "type": "string"
+            },
+            {
+              "id": "price",
+              "name": "price",
+              "value": "={{ $json.chart.result[0].meta.regularMarketPrice }}",
+              "type": "number"
+            },
+            {
+              "id": "prev_close",
+              "name": "prev_close",
+              "value": "={{ $json.chart.result[0].meta.chartPreviousClose }}",
+              "type": "number"
+            },
+            {
+              "id": "change",
+              "name": "change",
+              "value": "={{ $json.chart.result[0].meta.regularMarketPrice - $json.chart.result[0].meta.chartPreviousClose }}",
+              "type": "number"
+            },
+            {
+              "id": "change_pct",
+              "name": "change_pct",
+              "value": "={{ (($json.chart.result[0].meta.regularMarketPrice - $json.chart.result[0].meta.chartPreviousClose) / $json.chart.result[0].meta.chartPreviousClose * 100).toFixed(2) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "parse-stock",
+      "name": "Parse Stock Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1984,
+        -48
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Params": {
+      "main": [
+        [
+          {
+            "node": "Merge Triggers",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude": {
+      "main": [
+        [
+          {
+            "node": "Extract Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Analysis": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Telegram?": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Telegram Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Telegram": {
+      "main": [
+        [
+          {
+            "node": "Telegram Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Response": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Telegram Response": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Responses": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Morning Summary Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Cron Defaults",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Cron Defaults": {
+      "main": [
+        [
+          {
+            "node": "Merge Triggers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Triggers": {
+      "main": [
+        [
+          {
+            "node": "Create Symbols Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Symbols Array": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Symbols",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Symbols": {
+      "main": [
+        [
+          {
+            "node": "Fetch Stock Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Stock Data": {
+      "main": [
+        [
+          {
+            "node": "Parse Stock Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Stock Data": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Symbols",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed"
+  },
+  "versionId": "fixed-version",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    {
+      "id": "GQEwbsZYjWSuP4yv",
+      "name": "Telegram"
+    }
+  ]
+}
