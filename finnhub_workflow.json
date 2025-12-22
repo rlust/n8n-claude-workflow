@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2025-12-21T21:37:02.726Z",
+  "updatedAt": "2025-12-21T21:42:15.557Z",
   "createdAt": "2025-12-17T18:09:02.010Z",
   "id": "91YhrGyci58FCsUd",
-  "name": "Stock to Telegram v3 (Working)",
+  "name": "Stock to Telegram v4 (Finnhub)",
   "description": null,
   "active": true,
   "isArchived": false,
@@ -10,7 +10,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "stock-telegram-v3",
+        "path": "stock-telegram-v4-finnhub",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -22,7 +22,7 @@
         240,
         400
       ],
-      "webhookId": "stock-telegram-v3"
+      "webhookId": "stock-telegram-v4-finnhub"
     },
     {
       "parameters": {
@@ -425,20 +425,13 @@
     },
     {
       "parameters": {
-        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ $json.symbol }}?interval=1d&range=5d",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "User-Agent",
-              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
-          ]
-        },
+        "url": "=https://finnhub.io/api/v1/quote?symbol={{ $json.symbol }}&token={{ $credentials.finnhubApi }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "finnhubApi",
         "options": {}
       },
       "id": "fetch-stock",
-      "name": "Fetch Stock Data",
+      "name": "Fetch Stock Quote",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -453,31 +446,31 @@
             {
               "id": "symbol",
               "name": "symbol",
-              "value": "={{ $json.chart.result[0].meta.symbol }}",
+              "value": "={{ $json.symbol }}",
               "type": "string"
             },
             {
               "id": "price",
               "name": "price",
-              "value": "={{ $json.chart.result[0].meta.regularMarketPrice }}",
+              "value": "={{ $json.c }}",
               "type": "number"
             },
             {
               "id": "prev_close",
               "name": "prev_close",
-              "value": "={{ $json.chart.result[0].meta.chartPreviousClose }}",
+              "value": "={{ $json.pc }}",
               "type": "number"
             },
             {
               "id": "change",
               "name": "change",
-              "value": "={{ $json.chart.result[0].meta.regularMarketPrice - $json.chart.result[0].meta.chartPreviousClose }}",
+              "value": "={{ $json.c - $json.pc }}",
               "type": "number"
             },
             {
               "id": "change_pct",
               "name": "change_pct",
-              "value": "={{ (($json.chart.result[0].meta.regularMarketPrice - $json.chart.result[0].meta.chartPreviousClose) / $json.chart.result[0].meta.chartPreviousClose * 100).toFixed(2) }}",
+              "value": "={{ (($json.c - $json.pc) / $json.pc) * 100 }}",
               "type": "string"
             }
           ]
@@ -708,9 +701,9 @@
     "templateCredsSetupCompleted": true
   },
   "pinData": {},
-  "versionId": "b2b81fcd-793e-450f-aadd-4e6fb323e792",
-  "activeVersionId": "b2b81fcd-793e-450f-aadd-4e6fb323e792",
-  "versionCounter": 98,
+  "versionId": "5bbc74a3-96b1-40ff-b73e-55f5227db25f",
+  "activeVersionId": "5bbc74a3-96b1-40ff-b73e-55f5227db25f",
+  "versionCounter": 101,
   "triggerCount": 2,
   "shared": [
     {
@@ -776,9 +769,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2025-12-21T21:37:02.728Z",
-    "createdAt": "2025-12-21T21:37:02.728Z",
-    "versionId": "b2b81fcd-793e-450f-aadd-4e6fb323e792",
+    "updatedAt": "2025-12-21T21:42:15.559Z",
+    "createdAt": "2025-12-21T21:42:15.559Z",
+    "versionId": "5bbc74a3-96b1-40ff-b73e-55f5227db25f",
     "workflowId": "91YhrGyci58FCsUd",
     "nodes": [
       {
@@ -913,7 +906,7 @@
               {
                 "id": "symbol4",
                 "name": "symbol4",
-                "value": "={{ $json.body.symbols ? $json.body.symbols.split(',')[3]?.trim() || 'PNB' : 'PNB' }}",
+                "value": "={{ $json.body.symbols ? $json.body.symbols.split(',')[3]?.trim() || 'PRK' : 'PRK' }}",
                 "type": "string"
               },
               {
@@ -1476,10 +1469,10 @@
     "description": null,
     "workflowPublishHistory": [
       {
-        "createdAt": "2025-12-21T21:37:02.782Z",
-        "id": 123,
+        "createdAt": "2025-12-21T21:42:15.636Z",
+        "id": 124,
         "workflowId": "91YhrGyci58FCsUd",
-        "versionId": "b2b81fcd-793e-450f-aadd-4e6fb323e792",
+        "versionId": "5bbc74a3-96b1-40ff-b73e-55f5227db25f",
         "event": "activated",
         "userId": "08b5429a-34c6-4603-bb5c-7e6f84ee88ba"
       }

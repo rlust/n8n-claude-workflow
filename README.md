@@ -1,5 +1,34 @@
 # n8n + Claude Workflows
 
+A collection of production-ready n8n workflows that integrate with Claude (Anthropic) for intelligent automation tasks.
+
+---
+
+## 🚀 **PRODUCTION WORKFLOW: Finnhub Stock Analysis** ✅
+
+**Status:** Active & Working (2025-12-22)
+
+### Quick Start - Working Webhook
+
+```bash
+curl -X POST http://100.82.85.95:5678/webhook/stock-finnhub \
+  -H 'Content-Type: application/json' \
+  -d '{"symbols": "AAPL,MSFT,GOOGL", "send_to_telegram": false}'
+```
+
+**Features:**
+- ✅ Real-time stock data (Finnhub API - 60 calls/min)
+- ✅ AI-powered market analysis (Claude Sonnet 4.5)
+- ✅ Telegram notifications with formatting
+- ✅ Daily scheduled reports (9:30 AM Mon-Fri)
+- ✅ On-demand webhook queries
+
+**📖 Complete Documentation:** [FINNHUB-WORKFLOW-WORKING.md](FINNHUB-WORKFLOW-WORKING.md)
+
+---
+
+## 📚 Additional Workflows
+
 A collection of production-ready n8n workflows that integrate with Claude (Anthropic) for intelligent automation tasks, including both **Claude API** (simple text processing) and **Claude Agent SDK** (autonomous agents).
 
 ## Overview

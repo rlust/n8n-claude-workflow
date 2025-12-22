@@ -1,0 +1,6 @@
+Finnhub Workflow Transformation Log
+======================================================================
+
+• Updated HTTP node: Fetch Stock Data → Fetch Stock Quote
+• Updated data extraction: Parse Stock Data
+• Updated webhook path: stock-telegram-v3 → stock-telegram-v4-finnhub
